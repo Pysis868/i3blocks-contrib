@@ -1,15 +1,97 @@
 #!/usr/bin/env bash
-# Author: Kn
 
-while :
-do
-  ID=$(xprop -root | awk '/_NET_ACTIVE_WINDOW\(WINDOW\)/{print $NF}')
-  if [[ $1 ]] 
-  then
-    TITLE=$(xprop -id $ID -len $1 | awk '/_NET_WM_NAME/{$1=$2="";print}' | cut -d'"' -f2)
-    echo "$TITLE"
-  else
-    TITLE=$(xprop -id $ID | awk '/_NET_WM_NAME/{$1=$2="";print}' | cut -d'"' -f2)
-    echo "$TITLE"
-  fi
+# Author: zDEFz
+# Editor: Pysis
+
+OPTIONS='Other Options:
+  -h, --help                    Print usage information.
+
+Display Options:
+  -c, --classname               Get classname of current window
+  -d, --dimensions              Get window dimensions of current window
+  -p, --position                Get window positions of current window
+  -t, --titlename               Get titlename of current window
+';
+
+function print_usage() {
+  echo "Usage: $(basename "$0") <displayOption ...>";
+  echo;
+  echo "$OPTIONS";
+}
+
+function getClassname()
+{
+  classname="$(
+    xdotool getactivewindow getwindowclassname
+  )";
+  echo -n "class=[$classname]";
+}
+
+function getTitlename()
+{
+  titlename="$(
+    xdotool getactivewindow getwindowname
+  )";
+  echo -n "title=[$titlename]";
+}
+
+function getWindowDimensions()
+{
+  windowdimensions="$(
+    xdotool getactivewindow getwindowgeometry \
+    | grep 'Geometry' \
+    | awk '{ print $2 }'
+  )";
+  echo -n "Dim=[$windowdimensions]";
+}
+
+function getWindowPosition()
+{
+  windowposition="$(
+    xdotool getactivewindow getwindowgeometry \
+    | grep "Position" \
+    | awk '{ print $2 }'
+  )";
+  echo -n "Pos=[$windowposition]";
+}
+
+hasPrintedAttribute='false';
+
+if [ "$1" == '-h' -o "$1" == '--help' ]; then
+  print_usage;
+  exit 0;
+fi
+
+while [ -n "$1" ]; do
+  case "$1" in
+    -c | --classname  )
+      [ "$hasPrintedAttribute" == 'true' ] && echo -n ' ';
+      hasPrintedAttribute='true';
+      getClassname;
+      ;;
+    -d | --dimensions )
+      [ "$hasPrintedAttribute" == 'true' ] && echo -n ' ';
+      hasPrintedAttribute='true';
+      getWindowDimensions;
+      ;;
+    -p | --position   )
+      [ "$hasPrintedAttribute" == 'true' ] && echo -n ' ';
+      hasPrintedAttribute='true';
+      getWindowPosition;
+      ;;
+    -t | --titlename  )
+      [ "$hasPrintedAttribute" == 'true' ] && echo -n ' ';
+      hasPrintedAttribute='true';
+      getTitlename;
+      ;;
+  esac
+
+  shift 1;
 done
+
+if [ "$hasPrintedAttribute" == 'false' ]; then
+  print_usage;
+  exit 1;
+else
+  echo;
+fi
